@@ -288,7 +288,7 @@ fun MonthlySummaryScreen(
                             color = FarazCyan
                         )
                         Text(
-                            text = "Kharch: ₹${history.totalCost.toInt()}",
+                            text = "Advance: ₹${history.advancePaid.toInt()} • Kharch: ₹${history.totalCost.toInt()}",
                             fontSize = 10.sp,
                             color = DarkTextMuted
                         )

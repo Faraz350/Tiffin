@@ -8,6 +8,7 @@ import com.example.data.model.AppSettings
 import com.example.data.model.AttendanceRecord
 import com.example.data.model.AttendanceStatus
 import com.example.data.model.DateUtils
+import com.example.data.model.MonthlyPayment
 import com.example.data.model.SimpleDate
 import com.example.data.model.SimpleYearMonth
 import com.example.data.model.UserProfile
@@ -56,6 +57,8 @@ data class MonthHistoryItem(
     val leaveDays: Int,
     val totalCost: Double,
     val moneySaved: Double,
+    val advancePaid: Double,
+    val pricePerTiffin: Double,
     val currencySymbol: String,
     val remainingBalance: Double,
     val isCurrentMonth: Boolean
@@ -110,25 +113,30 @@ class TiffinViewModel(
     val allAttendance = repository.allAttendance
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val allPayments = repository.allPayments
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val settingsFlow = repository.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // Combined UI State
     val uiState: StateFlow<TiffinUiState> = combine(
-        profiles,
-        _activeProfileId,
-        _selectedMonth,
+        combine(profiles, _activeProfileId, _selectedMonth) { p, id, m -> Triple(p, id, m) },
         allAttendance,
+        allPayments,
         settingsFlow
-    ) { profileList, currentProfileId, selectedMonth, attendanceList, dbSettings ->
+    ) { (profileList, currentProfileId, selectedMonth), attendanceList, paymentsList, dbSettings ->
         val effectiveSettings = dbSettings ?: AppSettings()
         val activeProf = profileList.firstOrNull { it.id == currentProfileId }
             ?: profileList.firstOrNull { it.isDefault }
             ?: profileList.firstOrNull()
 
         val profId = activeProf?.id ?: 1L
-        val advancePaid = activeProf?.monthlyAdvancePaid ?: 3000.0
-        val pricePerTiffin = activeProf?.pricePerTiffin ?: effectiveSettings.pricePerTiffin
+
+        // Month-specific advance & rate (each month has its own hisaab!)
+        val monthPayment = paymentsList.firstOrNull { it.profileId == profId && it.yearMonthIso == selectedMonth.isoString }
+        val advancePaid = monthPayment?.amountPaid ?: activeProf?.monthlyAdvancePaid ?: 3000.0
+        val pricePerTiffin = monthPayment?.pricePerTiffin ?: activeProf?.pricePerTiffin ?: effectiveSettings.pricePerTiffin
         val currency = effectiveSettings.currencySymbol
 
         val activeAttendance = attendanceList.filter { it.profileId == profId }
@@ -223,15 +231,20 @@ class TiffinViewModel(
                 if (s == AttendanceStatus.PRESENT) presentCount++
                 if (s == AttendanceStatus.ABSENT) absentCount++
             }
-            val cost = presentCount * pricePerTiffin
-            val saved = absentCount * pricePerTiffin
-            val bal = advancePaid - cost
+            val ymPayment = paymentsList.firstOrNull { it.profileId == profId && it.yearMonthIso == ym.isoString }
+            val ymAdvance = ymPayment?.amountPaid ?: activeProf?.monthlyAdvancePaid ?: 3000.0
+            val ymRate = ymPayment?.pricePerTiffin ?: activeProf?.pricePerTiffin ?: effectiveSettings.pricePerTiffin
+            val cost = presentCount * ymRate
+            val saved = absentCount * ymRate
+            val bal = ymAdvance - cost
             MonthHistoryItem(
                 yearMonth = ym,
                 tiffinsReceived = presentCount,
                 leaveDays = absentCount,
                 totalCost = cost,
                 moneySaved = saved,
+                advancePaid = ymAdvance,
+                pricePerTiffin = ymRate,
                 currencySymbol = currency,
                 remainingBalance = bal,
                 isCurrentMonth = (ym == currentYm)
@@ -308,6 +321,18 @@ class TiffinViewModel(
                 cur.copy(
                     pricePerTiffin = pricePerTiffin,
                     activeProfileId = insertedId
+                )
+            )
+
+            // Save initial month payment record
+            val curYm = DateUtils.currentYearMonth().isoString
+            repository.savePayment(
+                MonthlyPayment(
+                    profileId = insertedId,
+                    yearMonthIso = curYm,
+                    amountPaid = advanceAmount,
+                    pricePerTiffin = pricePerTiffin,
+                    isMarkedPaid = true
                 )
             )
         }
@@ -397,14 +422,31 @@ class TiffinViewModel(
     }
 
     fun updateAdvanceAndRate(advancePaid: Double, ratePerTiffin: Double) {
-        val active = uiState.value.activeProfile ?: return
+        val profId = _activeProfileId.value
+        val ym = _selectedMonth.value.isoString
         viewModelScope.launch {
-            repository.updateProfile(
-                active.copy(
-                    monthlyAdvancePaid = advancePaid,
-                    pricePerTiffin = ratePerTiffin
+            repository.savePayment(
+                MonthlyPayment(
+                    profileId = profId,
+                    yearMonthIso = ym,
+                    amountPaid = advancePaid,
+                    pricePerTiffin = ratePerTiffin,
+                    isMarkedPaid = true,
+                    updatedAt = System.currentTimeMillis()
                 )
             )
+            // If the user is editing the current month, also update profile defaults so future months inherit it
+            if (_selectedMonth.value == DateUtils.currentYearMonth()) {
+                val active = uiState.value.activeProfile
+                if (active != null) {
+                    repository.updateProfile(
+                        active.copy(
+                            monthlyAdvancePaid = advancePaid,
+                            pricePerTiffin = ratePerTiffin
+                        )
+                    )
+                }
+            }
         }
     }
 

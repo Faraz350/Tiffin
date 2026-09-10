@@ -30,7 +30,7 @@ class Converters {
         MonthlyCarryForward::class,
         AppSettings::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

@@ -57,14 +57,18 @@ data class AttendanceRecord(
     val updatedAt: Long = System.currentTimeMillis()
 )
 
-@Entity(tableName = "monthly_payments")
+@Entity(
+    tableName = "monthly_payments",
+    primaryKeys = ["profileId", "yearMonthIso"]
+)
 data class MonthlyPayment(
-    @PrimaryKey
-    val yearMonthIso: String, // e.g. "2026-09"
-    val amountPaid: Double = 0.0,
+    val profileId: Long = 1L,
+    val yearMonthIso: String, // e.g. "2026-08", "2026-09"
+    val amountPaid: Double = 3000.0,
+    val pricePerTiffin: Double = 50.0,
     val paymentDateIso: String? = null,
     val paymentMode: String = "UPI",
-    val isMarkedPaid: Boolean = false,
+    val isMarkedPaid: Boolean = true,
     val note: String? = null,
     val updatedAt: Long = System.currentTimeMillis()
 )

@@ -323,6 +323,7 @@ fun TiffinApp(
     if (isEditHisaabDialogOpen) {
         EditHisaabDialog(
             profileName = uiState.activeProfile?.name ?: "Faraz",
+            monthName = uiState.selectedMonth.displayString(),
             currentAdvance = uiState.monthlySummary.advancePaid,
             currentRate = uiState.monthlySummary.pricePerTiffin,
             onDismiss = { isEditHisaabDialogOpen = false },

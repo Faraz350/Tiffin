@@ -30,6 +30,7 @@ import com.example.ui.theme.FarazCyan
 @Composable
 fun EditHisaabDialog(
     profileName: String,
+    monthName: String,
     currentAdvance: Double,
     currentRate: Double,
     onDismiss: () -> Unit,
@@ -43,13 +44,13 @@ fun EditHisaabDialog(
         title = {
             Column {
                 Text(
-                    text = "Tiffin Hisaab Badlein 💰",
+                    text = "Tiffin Hisaab ($monthName) 💰",
                     fontWeight = FontWeight.Bold,
                     color = DarkTextPrimary,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "$profileName ke liye advance aur tiffin rate set karein",
+                    text = "$profileName ke liye $monthName ka advance aur rate",
                     style = MaterialTheme.typography.bodySmall,
                     color = DarkTextSecondary
                 )

@@ -70,8 +70,14 @@ interface AttendanceDao {
 
 @Dao
 interface PaymentDao {
-    @Query("SELECT * FROM monthly_payments WHERE yearMonthIso = :yearMonthIso LIMIT 1")
-    fun getPaymentForMonth(yearMonthIso: String): Flow<MonthlyPayment?>
+    @Query("SELECT * FROM monthly_payments WHERE profileId = :profileId AND yearMonthIso = :yearMonthIso LIMIT 1")
+    fun getPaymentForMonth(profileId: Long, yearMonthIso: String): Flow<MonthlyPayment?>
+
+    @Query("SELECT * FROM monthly_payments WHERE profileId = :profileId AND yearMonthIso = :yearMonthIso LIMIT 1")
+    suspend fun getPaymentForMonthSync(profileId: Long, yearMonthIso: String): MonthlyPayment?
+
+    @Query("SELECT * FROM monthly_payments WHERE profileId = :profileId ORDER BY yearMonthIso DESC")
+    fun getPaymentsForProfile(profileId: Long): Flow<List<MonthlyPayment>>
 
     @Query("SELECT * FROM monthly_payments ORDER BY yearMonthIso DESC")
     fun getAllPayments(): Flow<List<MonthlyPayment>>
@@ -79,8 +85,11 @@ interface PaymentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(payment: MonthlyPayment)
 
-    @Query("DELETE FROM monthly_payments WHERE yearMonthIso = :yearMonthIso")
-    suspend fun deleteByMonth(yearMonthIso: String)
+    @Query("DELETE FROM monthly_payments WHERE profileId = :profileId AND yearMonthIso = :yearMonthIso")
+    suspend fun deleteByMonth(profileId: Long, yearMonthIso: String)
+
+    @Query("DELETE FROM monthly_payments")
+    suspend fun deleteAllPayments()
 }
 
 @Dao

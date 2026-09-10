@@ -85,11 +85,15 @@ class TiffinRepository(
     suspend fun clearAllData() {
         attendanceDao.deleteAllAttendance()
         userProfileDao.deleteAllProfiles()
+        paymentDao.deleteAllPayments()
     }
 
     // Monthly Payments
-    fun getPaymentForMonth(yearMonthIso: String): Flow<MonthlyPayment?> =
-        paymentDao.getPaymentForMonth(yearMonthIso)
+    fun getPaymentForMonth(profileId: Long, yearMonthIso: String): Flow<MonthlyPayment?> =
+        paymentDao.getPaymentForMonth(profileId, yearMonthIso)
+
+    fun getPaymentsForProfile(profileId: Long): Flow<List<MonthlyPayment>> =
+        paymentDao.getPaymentsForProfile(profileId)
 
     val allPayments: Flow<List<MonthlyPayment>> = paymentDao.getAllPayments()
 
