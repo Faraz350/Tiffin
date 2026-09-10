@@ -52,16 +52,55 @@ fun EditProfileDialog(
     canDelete: Boolean,
     onDismiss: () -> Unit,
     onSaveProfile: (UserProfile) -> Unit,
-    onDeleteProfile: (Long) -> Unit
+    onDeleteProfile: (Long) -> Unit,
+    onResetAllData: (() -> Unit)? = null
 ) {
     var name by remember { mutableStateOf(profile.name) }
     var selectedEmoji by remember { mutableStateOf(profile.avatarEmoji) }
     var advanceText by remember { mutableStateOf(profile.monthlyAdvancePaid.toInt().toString()) }
     var rateText by remember { mutableStateOf(profile.pricePerTiffin.toInt().toString()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showResetConfirm by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
 
     val emojis = listOf("🧑‍🎓", "😎", "🧑‍💻", "👨‍🍳", "🍛", "🍱", "🚀", "🔥")
+
+    if (showResetConfirm) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirm = false },
+            title = {
+                Text(
+                    text = "Naye Sire Se Shuru Karein? 🔄",
+                    fontWeight = FontWeight.Bold,
+                    color = AbsentRedNeon
+                )
+            },
+            text = {
+                Text(
+                    text = "Kya aap saara data delete karke bilkul naya setup shuru karna chahte hain? Sabhi purane profiles aur attendance records hat jayenge.",
+                    color = DarkTextPrimary,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showResetConfirm = false
+                        onResetAllData?.invoke()
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AbsentRedNeon)
+                ) {
+                    Text("Haan, Reset Karein", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showResetConfirm = false }) {
+                    Text("Radd Karein", color = DarkTextSecondary)
+                }
+            }
+        )
+    }
 
     if (showDeleteConfirm) {
         AlertDialog(
@@ -227,12 +266,24 @@ fun EditProfileDialog(
                             fontSize = 13.sp
                         )
                     }
-                } else {
-                    Text(
-                        text = "ℹ️ Yeh aakhri profile hai, isliye isko delete nahi kiya ja sakta.",
-                        fontSize = 11.sp,
-                        color = DarkTextSecondary
-                    )
+                }
+
+                if (onResetAllData != null) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedButton(
+                        onClick = { showResetConfirm = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF59E0B)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("reset_all_data_button")
+                    ) {
+                        Text(
+                            text = "🔄 Naye Sire Se Setup Shuru Karein (Reset All)",
+                            color = Color(0xFFF59E0B),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         },

@@ -50,6 +50,7 @@ import com.example.ui.components.EditHisaabDialog
 import com.example.ui.components.EditProfileDialog
 import com.example.ui.components.TiffinSplashScreen
 import com.example.ui.screens.CalendarScreen
+import com.example.ui.screens.InitialSetupScreen
 import com.example.ui.screens.MonthlySummaryScreen
 import com.example.ui.screens.TodayDashboardScreen
 import com.example.ui.theme.DarkCardBorder
@@ -94,6 +95,16 @@ fun TiffinApp(
     if (showSplash) {
         TiffinSplashScreen(
             onAnimationFinish = { showSplash = false }
+        )
+        return
+    }
+
+    // First-Time User Onboarding Setup
+    if (uiState.profiles.isEmpty()) {
+        InitialSetupScreen(
+            onCompleteSetup = { name, emoji, advance, rate ->
+                viewModel.createInitialProfile(name, emoji, advance, rate)
+            }
         )
         return
     }
@@ -301,6 +312,9 @@ fun TiffinApp(
             },
             onDeleteProfile = { idToDelete ->
                 viewModel.deleteProfile(idToDelete)
+            },
+            onResetAllData = {
+                viewModel.resetAllDataToFresh()
             }
         )
     }

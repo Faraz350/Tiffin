@@ -28,10 +28,15 @@ interface UserProfileDao {
 
     @Query("DELETE FROM user_profiles WHERE id = :id")
     suspend fun deleteProfile(id: Long)
+
+    @Query("DELETE FROM user_profiles")
+    suspend fun deleteAllProfiles()
 }
 
 @Dao
 interface AttendanceDao {
+    @Query("DELETE FROM attendance_records")
+    suspend fun deleteAllAttendance()
     @Query("SELECT * FROM attendance_records WHERE profileId = :profileId ORDER BY dateIso ASC")
     fun getAttendanceForProfile(profileId: Long): Flow<List<AttendanceRecord>>
 

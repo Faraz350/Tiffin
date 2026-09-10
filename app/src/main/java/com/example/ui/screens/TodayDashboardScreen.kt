@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AttendanceRecord
 import com.example.data.model.AttendanceStatus
+import com.example.data.model.DateUtils
 import com.example.data.model.SimpleDate
 import com.example.ui.PastDayItem
 import com.example.ui.TiffinUiState
@@ -106,6 +107,7 @@ fun TodayDashboardScreen(
         // --- 1. BRANDING & PROFILE SWITCHER HEADER ---
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Clean Date & Attendance Status Banner (No duplicate Tiffin Tracker or Made by Faraz)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -113,34 +115,53 @@ fun TodayDashboardScreen(
                 ) {
                     Column {
                         Text(
-                            text = "Tiffin Tracker 🍱",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            text = "📅 ${today.fullDisplayString()}",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
                             color = DarkTextPrimary
                         )
                         Text(
-                            text = "Hostel & Roommate Attendance Hisaab",
+                            text = "Daily attendance aur automatic calculation",
                             fontSize = 12.sp,
                             color = DarkTextSecondary
                         )
                     }
 
-                    // Watermark Pill: Made by Faraz
+                    // Quick Today Status Pill
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = FarazCyan.copy(alpha = 0.15f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, FarazCyan.copy(alpha = 0.4f)),
-                        modifier = Modifier.testTag("made_by_faraz_badge")
+                        shape = RoundedCornerShape(14.dp),
+                        color = when (todayStatus) {
+                            AttendanceStatus.PRESENT -> Color(0xFF22C55E).copy(alpha = 0.2f)
+                            AttendanceStatus.ABSENT -> Color(0xFFEF4444).copy(alpha = 0.2f)
+                            AttendanceStatus.UNMARKED -> Color.White.copy(alpha = 0.08f)
+                        },
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            when (todayStatus) {
+                                AttendanceStatus.PRESENT -> Color(0xFF22C55E)
+                                AttendanceStatus.ABSENT -> Color(0xFFEF4444)
+                                AttendanceStatus.UNMARKED -> DarkCardBorder
+                            }
+                        )
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = "✨ Made by Faraz",
-                                color = FarazCyan,
+                                text = when (todayStatus) {
+                                    AttendanceStatus.PRESENT -> "🟢 Aaya"
+                                    AttendanceStatus.ABSENT -> "🔴 Leave"
+                                    AttendanceStatus.UNMARKED -> "⏳ Not Marked"
+                                },
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
+                                color = when (todayStatus) {
+                                    AttendanceStatus.PRESENT -> Color(0xFF22C55E)
+                                    AttendanceStatus.ABSENT -> Color(0xFFEF4444)
+                                    AttendanceStatus.UNMARKED -> DarkTextSecondary
+                                }
                             )
                         }
                     }

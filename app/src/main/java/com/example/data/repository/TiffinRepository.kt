@@ -82,6 +82,11 @@ class TiffinRepository(
         attendanceDao.clearAttendanceForMonth(profileId, monthPrefix)
     }
 
+    suspend fun clearAllData() {
+        attendanceDao.deleteAllAttendance()
+        userProfileDao.deleteAllProfiles()
+    }
+
     // Monthly Payments
     fun getPaymentForMonth(yearMonthIso: String): Flow<MonthlyPayment?> =
         paymentDao.getPaymentForMonth(yearMonthIso)

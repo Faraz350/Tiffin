@@ -277,98 +277,47 @@ class TiffinViewModel(
                 )
             }
 
-            // Seed profiles & initial hostel attendance if empty
+            // Check existing profiles
             val existingProfiles = repository.allProfiles.first()
-            if (existingProfiles.isEmpty()) {
-                seedInitialProfilesAndAttendance()
-            } else {
+            if (existingProfiles.isNotEmpty()) {
                 _activeProfileId.value = existingProfiles.firstOrNull { it.isDefault }?.id ?: existingProfiles.first().id
             }
         }
     }
 
-    private suspend fun seedInitialProfilesAndAttendance() {
-        val today = DateUtils.today()
-        val currentYm = SimpleYearMonth(today.year, today.month)
-
-        // 1. Faraz profile (You)
-        val farazProfile = UserProfile(
-            id = 1L,
-            name = "Faraz (You)",
-            avatarEmoji = "🧑‍💻",
-            monthlyAdvancePaid = 3000.0,
-            pricePerTiffin = 50.0,
-            isDefault = true
-        )
-        repository.insertProfile(farazProfile)
-
-        // 2. Rahul profile (Dost / Roommate)
-        val rahulProfile = UserProfile(
-            id = 2L,
-            name = "Rahul (Dost)",
-            avatarEmoji = "😎",
-            monthlyAdvancePaid = 3000.0,
-            pricePerTiffin = 50.0,
-            isDefault = false
-        )
-        repository.insertProfile(rahulProfile)
-
-        _activeProfileId.value = 1L
-
-        val initialRecords = mutableListOf<AttendanceRecord>()
-
-        // For Faraz:
-        // Sep 1: Absent ("1. Sep ko main aaya ni tha room pr")
-        initialRecords.add(
-            AttendanceRecord(
-                profileId = 1L,
-                dateIso = SimpleDate(currentYm.year, currentYm.month, 1).isoString,
-                status = AttendanceStatus.ABSENT,
-                note = "Room par nahi tha (1 Sep)"
+    fun createInitialProfile(
+        name: String,
+        emoji: String,
+        advanceAmount: Double,
+        pricePerTiffin: Double
+    ) {
+        viewModelScope.launch {
+            val newProfile = UserProfile(
+                name = name,
+                avatarEmoji = emoji,
+                monthlyAdvancePaid = advanceAmount,
+                pricePerTiffin = pricePerTiffin,
+                isDefault = true
             )
-        )
-        // Sep 2: Present
-        initialRecords.add(
-            AttendanceRecord(
-                profileId = 1L,
-                dateIso = SimpleDate(currentYm.year, currentYm.month, 2).isoString,
-                status = AttendanceStatus.PRESENT
-            )
-        )
-        // Sep 3: Absent (Total 2 absent days in this month as requested: "Iska matlab do din nhi aaya tiffin")
-        initialRecords.add(
-            AttendanceRecord(
-                profileId = 1L,
-                dateIso = SimpleDate(currentYm.year, currentYm.month, 3).isoString,
-                status = AttendanceStatus.ABSENT,
-                note = "Leave / Bahar khaya"
-            )
-        )
-        // Sep 4 to yesterday: Present
-        for (day in 4 until today.day) {
-            initialRecords.add(
-                AttendanceRecord(
-                    profileId = 1L,
-                    dateIso = SimpleDate(currentYm.year, currentYm.month, day).isoString,
-                    status = AttendanceStatus.PRESENT
+            val insertedId = repository.insertProfile(newProfile)
+            _activeProfileId.value = insertedId
+
+            // Sync settings
+            val cur = repository.settings.first() ?: AppSettings()
+            repository.updateSettings(
+                cur.copy(
+                    pricePerTiffin = pricePerTiffin,
+                    activeProfileId = insertedId
                 )
             )
         }
+    }
 
-        // For Rahul (his friend):
-        // "jese purane dost 1 sep ko tiffin kiye the to wo apne phone pr. Kar sake. Ki aaya tha unka tiffin"
-        // Sep 1 to yesterday: All Present
-        for (day in 1 until today.day) {
-            initialRecords.add(
-                AttendanceRecord(
-                    profileId = 2L,
-                    dateIso = SimpleDate(currentYm.year, currentYm.month, day).isoString,
-                    status = AttendanceStatus.PRESENT
-                )
-            )
+    fun resetAllDataToFresh() {
+        viewModelScope.launch {
+            repository.clearAllData()
+            _activeProfileId.value = 1L
         }
-
-        repository.insertAllAttendance(initialRecords)
     }
 
     fun switchProfile(profileId: Long) {
