@@ -79,6 +79,7 @@ fun TodayDashboardScreen(
     onMarkToday: (AttendanceStatus) -> Unit,
     onSwitchProfile: (Long) -> Unit,
     onOpenAddProfileDialog: () -> Unit,
+    onOpenEditProfileDialog: (com.example.data.model.UserProfile) -> Unit,
     onOpenEditHisaabDialog: () -> Unit,
     onToggleDayStatus: (SimpleDate) -> Unit,
     onSetDayStatusDirect: (SimpleDate, AttendanceStatus) -> Unit,
@@ -145,13 +146,44 @@ fun TodayDashboardScreen(
                     }
                 }
 
-                // Profile Selector Carousel
-                Text(
-                    text = "Profiles & Roommates:",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = DarkTextSecondary
-                )
+                // Profile Selector Carousel Header with Edit Option
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Profiles & Roommates:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = DarkTextSecondary
+                    )
+
+                    activeProfile?.let { prof ->
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onOpenEditProfileDialog(prof) }
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .testTag("btn_edit_active_profile"),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Profile",
+                                tint = FarazCyan,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "Edit / Delete Profile ✏️",
+                                color = FarazCyan,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
 
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -183,14 +215,15 @@ fun TodayDashboardScreen(
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                     fontSize = 13.sp
                                 )
-                                if (isSelected) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(CircleShape)
-                                            .background(FarazCyan)
-                                    )
-                                }
+                                // Edit icon directly on the chip
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit ${prof.name}",
+                                    tint = if (isSelected) FarazCyan else DarkTextMuted,
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .clickable { onOpenEditProfileDialog(prof) }
+                                )
                             }
                         }
                     }
@@ -675,12 +708,25 @@ fun TodayDashboardScreen(
                                 ) {
                                     Text(text = friend.profile.avatarEmoji, fontSize = 20.sp)
                                     Column {
-                                        Text(
-                                            text = friend.profile.name,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = DarkTextPrimary
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = friend.profile.name,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = DarkTextPrimary
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Edit ${friend.profile.name}",
+                                                tint = FarazCyan,
+                                                modifier = Modifier
+                                                    .size(13.dp)
+                                                    .clickable { onOpenEditProfileDialog(friend.profile) }
+                                            )
+                                        }
                                         Text(
                                             text = when (friend.status) {
                                                 AttendanceStatus.PRESENT -> "🟢 Aaya Tha"

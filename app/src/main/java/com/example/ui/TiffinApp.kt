@@ -43,9 +43,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.AttendanceRecord
 import com.example.data.model.SimpleDate
+import com.example.data.model.UserProfile
 import com.example.ui.components.AddProfileDialog
 import com.example.ui.components.AttendanceBottomSheet
 import com.example.ui.components.EditHisaabDialog
+import com.example.ui.components.EditProfileDialog
+import com.example.ui.components.TiffinSplashScreen
 import com.example.ui.screens.CalendarScreen
 import com.example.ui.screens.MonthlySummaryScreen
 import com.example.ui.screens.TodayDashboardScreen
@@ -68,11 +71,13 @@ fun TiffinApp(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showSplash by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
     // Dialogs & Sheets state
     var selectedDateForEdit by remember { mutableStateOf<Pair<SimpleDate, AttendanceRecord?>?>(null) }
     var isAddProfileDialogOpen by remember { mutableStateOf(false) }
+    var profileToEdit by remember { mutableStateOf<UserProfile?>(null) }
     var isEditHisaabDialogOpen by remember { mutableStateOf(false) }
 
     // Request notification permission on Android 13+ (API 33+)
@@ -84,6 +89,13 @@ fun TiffinApp(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    if (showSplash) {
+        TiffinSplashScreen(
+            onAnimationFinish = { showSplash = false }
+        )
+        return
     }
 
     Scaffold(
@@ -107,11 +119,34 @@ fun TiffinApp(
                             border = androidx.compose.foundation.BorderStroke(1.dp, FarazCyan.copy(alpha = 0.3f))
                         ) {
                             Text(
-                                text = "Faraz",
+                                text = uiState.activeProfile?.name ?: "Faraz",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = FarazCyan,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    // Corner Branding: Made by Faraz
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = FarazCyan.copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, FarazCyan.copy(alpha = 0.4f)),
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .testTag("app_corner_faraz_badge")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "✨ Made by Faraz",
+                                color = FarazCyan,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -204,6 +239,7 @@ fun TiffinApp(
                     onMarkToday = { status -> viewModel.markToday(status) },
                     onSwitchProfile = { id -> viewModel.switchProfile(id) },
                     onOpenAddProfileDialog = { isAddProfileDialogOpen = true },
+                    onOpenEditProfileDialog = { prof -> profileToEdit = prof },
                     onOpenEditHisaabDialog = { isEditHisaabDialogOpen = true },
                     onToggleDayStatus = { date -> viewModel.quickToggleDayStatus(date) },
                     onSetDayStatusDirect = { date, st -> viewModel.setDateAttendance(date, st) },
@@ -250,6 +286,21 @@ fun TiffinApp(
             onDismiss = { isAddProfileDialogOpen = false },
             onAddProfile = { name, emoji, advance, rate ->
                 viewModel.addProfile(name, emoji, advance, rate)
+            }
+        )
+    }
+
+    // Edit / Delete Dost Profile Dialog
+    profileToEdit?.let { prof ->
+        EditProfileDialog(
+            profile = prof,
+            canDelete = uiState.profiles.size > 1,
+            onDismiss = { profileToEdit = null },
+            onSaveProfile = { updated ->
+                viewModel.updateProfile(updated)
+            },
+            onDeleteProfile = { idToDelete ->
+                viewModel.deleteProfile(idToDelete)
             }
         )
     }
